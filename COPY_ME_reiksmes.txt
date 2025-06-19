@@ -1,0 +1,3 @@
+COPY ME!
+Temperature - [MEAN, STD]   1.57673 7.20765
+Humidity - [MEAN, STD]      76.98635 16.93975
