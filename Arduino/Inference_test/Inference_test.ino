@@ -1,7 +1,9 @@
 
-//#include "model.h"
+//Mano modelis
+#include "model.h"
+
 //modelis is github
-#include "model_github.h"
+//#include "model_github.h"
 
 #include <TensorFlowLite.h>
 #include <tensorflow/lite/micro/all_ops_resolver.h>
@@ -138,6 +140,7 @@ void setup() {
 constexpr int num_reads = 3;
 
 void loop() {
+  
   float t = 0.0f;
   float h = 0.0f;
 
@@ -164,12 +167,21 @@ void loop() {
   Serial.println(" %");
 
 
+  // PAVYZDINIS MODELIS
   // Use the mean and standard deviation
   // extracted from your dataset
-  constexpr float t_mean = 2.08993f;
-  constexpr float h_mean = 87.22773f;
-  constexpr float t_std  = 6.82158f;
-  constexpr float h_std  = 14.21543f;
+  //constexpr float t_mean = 2.08993f;
+  //constexpr float h_mean = 87.22773f;
+  //constexpr float t_std  = 6.82158f;
+  //constexpr float h_std  = 14.21543f;
+
+  // MANO MODELIS
+  constexpr float t_mean = 1.57673f;
+  constexpr float h_mean = 76.98635f;
+  constexpr float t_std  = 7.20765f;
+  constexpr float h_std  = 16.93975f;
+
+  
   t = (t - t_mean) / t_std;
   h = (h - h_mean) / h_std;
 
@@ -198,6 +210,9 @@ void loop() {
   float out_int8 = tflu_o_tensor->data.int8[0];
   float out_f = (out_int8 - tflu_o_zero_point);
   out_f *= tflu_o_scale;
+
+  Serial.print("Prediction result: ");
+  Serial.println(out_f);
 
   if (out_f > 0.5) {
     Serial.println("Yes, it snows");
