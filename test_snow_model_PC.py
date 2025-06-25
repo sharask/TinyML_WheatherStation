@@ -1,11 +1,5 @@
-# Testavimo scenarijus TFLite modelio, kuris prognozuoja sniego tikimybę
-# Šis scenarijus naudoja tflite_runtime biblioteką, kad būtų lengviau paleisti TFLite modelius be pilno TensorFlow įdiegimo.
-# Paruosta Raspberry Pi ir kitoms mažoms sistemoms, kuriose gali būti riboti ištekliai.
-
-
-#import tensorflow as tf
+import tensorflow as tf
 import numpy as np
-from tflite_runtime.interpreter import Interpreter
 
 # --- Konfiguracija ---
 # Būtinai atnaujinkite šias reikšmes pagal tai, ką išspausdino jūsų prepare_model.py scenarijus!
@@ -21,14 +15,18 @@ TFLITE_MODEL_PATH = "snow_forecast_model.tflite" # Kelias iki jūsų .tflite mod
 def scale_value(value, mean, std):
     return (value - mean) / std
 
-def run_prediction(interpreter, input_details, output_details, temp_minus_2, humi_minus_2, temp_minus_1, humi_minus_1, temp_now, humi_now):
+def predict_snow(temp_minus_2, humi_minus_2, temp_minus_1, humi_minus_1, temp_now, humi_now):
     """
-    Funkcija, kuri naudoja jau įkeltą TFLite modelį, paruošia įvesties duomenis,
-    atlieka prognozę ir grąžina rezultatą. Efektyvesnė, nes modelis neįkeliamas iš naujo.
-    :param interpreter: Aktyvus TFLite interpreter objektas.
-    :param input_details: Modelio įvesties informacija.
-    :param output_details: Modelio išvesties informacija.
+    Funkcija, kuri įkelia TFLite modelį, paruošia įvesties duomenis,
+    atlieka prognozę ir grąžina rezultatą.
     """
+    # Įkeliame TFLite modelį ir priskiriame tenzorius
+    interpreter = tf.lite.Interpreter(model_path=TFLITE_MODEL_PATH)
+    interpreter.allocate_tensors()
+
+    # Gauname įvesties ir išvesties tenzorių informaciją
+    input_details = interpreter.get_input_details()[0]
+    output_details = interpreter.get_output_details()[0]
 
     # Paruošiame įvesties duomenis
     # 1. Normalizuojame reikšmes
@@ -78,17 +76,7 @@ def run_prediction(interpreter, input_details, output_details, temp_minus_2, hum
         return "Ne (Sniegas neprognozuojamas)", prediction_value
 
 if __name__ == "__main__":
-    print("\nTensorFlow Lite modelio testavimas sniego prognozei.\n")
-
-    # --- Modelio paruošimas (atliekamas vieną kartą) ---
-    print("Įkeliamas TFLite modelis...")
-    # Įkeliame TFLite modelį ir priskiriame tenzorius
-    interpreter = Interpreter(model_path=TFLITE_MODEL_PATH)
-    interpreter.allocate_tensors()
-    # Gauname įvesties ir išvesties tenzorių informaciją
-    input_details = interpreter.get_input_details()[0]
-    output_details = interpreter.get_output_details()[0]
-    print("Modelis paruoštas.\n")
+    print("TensorFlow Lite modelio testavimas sniego prognozei.\n")
 
     # Pavyzdiniai įvesties duomenys (temperatūra °C, drėgmė %)
     # Pakeiskite šias reikšmes norimomis testuoti
@@ -100,7 +88,7 @@ if __name__ == "__main__":
     temp_m1_s1, humi_m1_s1 = -1.5, 88.0
     temp_now_s1, humi_now_s1 = -1.0, 90.0
     
-    result_s1, value_s1 = run_prediction(interpreter, input_details, output_details, temp_m2_s1, humi_m2_s1, temp_m1_s1, humi_m1_s1, temp_now_s1, humi_now_s1)
+    result_s1, value_s1 = predict_snow(temp_m2_s1, humi_m2_s1, temp_m1_s1, humi_m1_s1, temp_now_s1, humi_now_s1)
     print(f"  Įvestis: T(t-2)={temp_m2_s1}°C, H(t-2)={humi_m2_s1}%; T(t-1)={temp_m1_s1}°C, H(t-1)={humi_m1_s1}%; T(t0)={temp_now_s1}°C, H(t0)={humi_now_s1}%")
     print(f"  Prognozė: {result_s1} (Reikšmė: {value_s1:.4f})\n")
 
@@ -110,7 +98,7 @@ if __name__ == "__main__":
     temp_m1_s2, humi_m1_s2 = 11.0, 48.0
     temp_now_s2, humi_now_s2 = 12.0, 45.0
 
-    result_s2, value_s2 = run_prediction(interpreter, input_details, output_details, temp_m2_s2, humi_m2_s2, temp_m1_s2, humi_m1_s2, temp_now_s2, humi_now_s2)
+    result_s2, value_s2 = predict_snow(temp_m2_s2, humi_m2_s2, temp_m1_s2, humi_m1_s2, temp_now_s2, humi_now_s2)
     print(f"  Įvestis: T(t-2)={temp_m2_s2}°C, H(t-2)={humi_m2_s2}%; T(t-1)={temp_m1_s2}°C, H(t-1)={humi_m1_s2}%; T(t0)={temp_now_s2}°C, H(t0)={humi_now_s2}%")
     print(f"  Prognozė: {result_s2} (Reikšmė: {value_s2:.4f})\n")
 
@@ -120,7 +108,7 @@ if __name__ == "__main__":
     temp_m1_s3, humi_m1_s3 = 0.5, 75.0
     temp_now_s3, humi_now_s3 = 0.0, 80.0
 
-    result_s3, value_s3 = run_prediction(interpreter, input_details, output_details, temp_m2_s3, humi_m2_s3, temp_m1_s3, humi_m1_s3, temp_now_s3, humi_now_s3)
+    result_s3, value_s3 = predict_snow(temp_m2_s3, humi_m2_s3, temp_m1_s3, humi_m1_s3, temp_now_s3, humi_now_s3)
     print(f"  Įvestis: T(t-2)={temp_m2_s3}°C, H(t-2)={humi_m2_s3}%; T(t-1)={temp_m1_s3}°C, H(t-1)={humi_m1_s3}%; T(t0)={temp_now_s3}°C, H(t0)={humi_now_s3}%")
     print(f"  Prognozė: {result_s3} (Reikšmė: {value_s3:.4f})\n")
 
